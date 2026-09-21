@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주식 물타기 계산기 | 평단가 및 추가 매수 시뮬레이터</title>
+  <meta name="description" content="현재 보유 주식의 평단가와 추가 매수 수량을 입력하여 최종 평단가 및 목표 평단 달성을 위한 필요 수량을 즉시 계산해보세요.">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent-red: #ef4444;
+      --accent-blue: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px 16px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+    header p { font-size: 0.95rem; color: var(--muted); }
+    
+    .card { background: var(--card-bg); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 20px; }
+    .section-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    
+    .input-group { margin-bottom: 14px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; font-weight: 600; color: var(--text); outline: none; transition: border-color 0.2s; }
+    input:focus { border-color: var(--primary); }
+
+    .btn-calc { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+    .btn-calc:hover { background: var(--primary-hover); }
+
+    .result-box { display: none; margin-top: 24px; padding-top: 20px; border-top: 2px dashed var(--border); }
+    .result-highlight { background: #eff6ff; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 16px; }
+    .result-highlight .title { font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
+    .result-highlight .price { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+    
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .result-item { background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 0.85rem; }
+    .result-item span { display: block; color: var(--muted); margin-bottom: 2px; }
+    .result-item strong { font-size: 1rem; color: var(--text); }
+
+    /* SEO 및 가이드 텍스트 (애드센스 승인 필수 영역) */
+    .article { font-size: 0.9rem; color: #334155; }
+    .article h2 { font-size: 1.15rem; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+    .article p { margin-bottom: 12px; }
+    .article ul { margin-left: 20px; margin-bottom: 12px; }
+    .article li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>📈 주식 물타기 계산기</h1>
+    <p>보유 평단가와 추가 매수 정보를 입력해 예상 평단을 확인하세요.</p>
+  </header>
+
+  <div class="card">
+    <div class="section-title">1. 현재 보유 현황</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label for="curPrice">현재 평단가 (원/달러)</label>
+        <input type="number" id="curPrice" placeholder="예: 75000">
+      </div>
+      <div class="input-group">
+        <label for="curQty">보유 수량 (주)</label>
+        <input type="number" id="curQty" placeholder="예: 20">
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top: 10px;">2. 추가 매수 계획</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label for="newPrice">추가 매수가 (원/달러)</label>
+        <input type="number" id="newPrice" placeholder="예: 62000">
+      </div>
+      <div class="input-group">
+        <label for="newQty">추가 매수 수량 (주)</label>
+        <input type="number" id="newQty" placeholder="예: 30">
+      </div>
+    </div>
+
+    <button class="btn-calc" onclick="calculate()">최종 평단가 계산하기</button>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-highlight">
+        <div class="title">예상 최종 평단가</div>
+        <div class="price" id="resAvgPrice">0원</div>
+      </div>
+      <div class="result-grid">
+        <div class="result-item">
+          <span>총 보유 수량</span>
+          <strong id="resTotalQty">0주</strong>
+        </div>
+        <div class="result-item">
+          <span>평단 변화율</span>
+          <strong id="resRate">0%</strong>
+        </div>
+        <div class="result-item">
+          <span>추가 매수 금액</span>
+          <strong id="resNewCost">0원</strong>
+        </div>
+        <div class="result-item">
+          <span>총 투자 금액</span>
+          <strong id="resTotalCost">0원</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 검색엔진(SEO) 및 구글 애드센스 심사를 통과하기 위한 실용 가이드 -->
+  <div class="card article">
+    <h2>주식 물타기(평균단가 인하)란?</h2>
+    <p>주식 투자에서 물타기(Scale-in)란 보유 중인 주식의 주가가 하락했을 때 추가로 주식을 매수하여 1주당 평균 매입단가(평단가)를 낮추는 매매 기법입니다. 평단가가 낮아지면 주가가 원래 수준까지 회복되지 않더라도 본전 탈출 또는 익절 전환이 가능한 장점이 있습니다.</p>
+    
+    <h2>평단가 계산 공식</h2>
+    <p>최종 평균단가는 단순 산술평균이 아닌 <strong>가중평균(Weighted Average)</strong> 방식으로 산출됩니다.</p>
+    <ul>
+      <li><strong>최종 평단가</strong> = (기존 총 매수금액 + 추가 매수금액) ÷ (기존 수량 + 추가 수량)</li>
+      <li><strong>기존 매수금액</strong> = 기존 평단가 × 기존 수량</li>
+      <li><strong>추가 매수금액</strong> = 추가 매수가 × 추가 수량</li>
+    </ul>
+
+    <h2>물타기 진행 시 주의할 점</h2>
+    <ul>
+      <li><strong>비중 관리:</strong> 무분별한 분할 매수는 포트폴리오 내 해당 종목의 비중을 지나치게 키워 전체 계좌의 리스크를 높입니다.</li>
+      <li><strong>펀더멘털 확인:</strong> 단순 시장 하락이 아닌 기업의 실적 악화나 영구적 훼손으로 인한 주가 하락인지 점검해야 합니다.</li>
+      <li><strong>분할 매수 계획:</strong> 한 번에 잔여 현금을 소진하지 않고, 지지선 확인 후 구간별로 나누어 진입하는 것이 유리합니다.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  function formatNumber(num) {
+    return Number(num).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+  }
+
+  function calculate() {
+    const curPrice = parseFloat(document.getElementById('curPrice').value);
+    const curQty = parseFloat(document.getElementById('curQty').value);
+    const newPrice = parseFloat(document.getElementById('newPrice').value);
+    const newQty = parseFloat(document.getElementById('newQty').value);
+
+    if (!curPrice || !curQty || !newPrice || !newQty) {
+      alert('모든 입력창에 숫자를 올바르게 입력해주세요.');
+      return;
+    }
+
+    const curTotalCost = curPrice * curQty;
+    const newTotalCost = newPrice * newQty;
+    const totalCost = curTotalCost + newTotalCost;
+    const totalQty = curQty + newQty;
+
+    const finalAvgPrice = totalCost / totalQty;
+    const changeRate = ((finalAvgPrice - curPrice) / curPrice) * 100;
+
+    document.getElementById('resAvgPrice').innerText = formatNumber(finalAvgPrice) + '원';
+    document.getElementById('resTotalQty').innerText = formatNumber(totalQty) + '주';
+    document.getElementById('resNewCost').innerText = formatNumber(newTotalCost) + '원';
+    document.getElementById('resTotalCost').innerText = formatNumber(totalCost) + '원';
+    
+    const rateElem = document.getElementById('resRate');
+    if (changeRate > 0) {
+      rateElem.innerText = '+' + formatNumber(changeRate) + '%';
+      rateElem.style.color = 'var(--accent-red)';
+    } else {
+      rateElem.innerText = formatNumber(changeRate) + '%';
+      rateElem.style.color = 'var(--accent-blue)';
+    }
+
+    document.getElementById('resultBox').style.display = 'block';
+  }
+</script>
+
+</body>
+</html>
